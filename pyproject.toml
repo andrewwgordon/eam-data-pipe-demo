@@ -1,0 +1,55 @@
+[project]
+name = "eam-data-pipe-demo"
+version = "0.1.0"
+description = "PoC: CDC data pipeline for EAM with ASD S5000F semantic transformation"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+dependencies = [
+    # Data processing — Polars is the ONLY batch transform engine
+    "polars>=1.0.0",
+    # Iceberg table management with S3 support (MinIO)
+    "pyiceberg[s3]>=0.7.0",
+    # PyArrow — required by PyIceberg for FileIO (PyArrowFileIO)
+    "pyarrow>=17.0.0",
+    # Kafka producer/consumer
+    "confluent-kafka>=2.5.0",
+    # MinIO Python SDK (bucket management, health checks)
+    "minio>=7.2.0",
+    # Data generation for the EAM simulator
+    "faker>=28.0.0",
+    # Settings management
+    "pydantic-settings>=2.4.0",
+]
+
+[project.optional-dependencies]
+airflow = [
+    "apache-airflow>=2.9.0",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.5.0",
+]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = [
+    "config*",
+    "eam_simulator*",
+    "transforms*",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]

@@ -1,0 +1,142 @@
+# EAM Data Pipe PoC — Local Infrastructure
+# Services: Kafka (KRaft), MinIO, Iceberg REST Catalog, Airflow
+#
+# Usage:
+#   docker compose up -d
+#   docker compose down -v   # tear down including volumes
+
+services:
+  # ── Kafka (KRaft mode — no Zookeeper) ─────────────────
+  kafka:
+    image: apache/kafka:3.9.0
+    container_name: eam-kafka
+    ports:
+      - "9092:9092"
+      - "9094:9094"
+    environment:
+      # KRaft — built-in with the official Apache image
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      # Listeners
+      KAFKA_LISTENERS: PLAINTEXT://:9094,CONTROLLER://:9093,EXTERNAL://:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9094,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      # Topic defaults
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_NUM_PARTITIONS: "4"
+      # Single-broker: internal topics need replication factor = 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      # Cluster ID (required for KRaft)
+      CLUSTER_ID: "eam-poc-kafka-cluster-01"
+    volumes:
+      - kafka-data:/tmp/kraft-combined-logs
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Topic initialisation (runs once then exits)
+  kafka-init:
+    image: apache/kafka:3.9.0
+    container_name: eam-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "/scripts/init-kafka-topics.sh"]
+    volumes:
+      - ./scripts:/scripts:ro
+
+  # ── MinIO (S3-compatible object storage) ──────────────
+  minio:
+    image: minio/minio:latest
+    container_name: eam-minio
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Console
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Bucket initialisation (runs once then exits)
+  minio-init:
+    image: minio/mc:latest
+    container_name: eam-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "/scripts/init-minio-buckets.sh"]
+    volumes:
+      - ./scripts:/scripts:ro
+
+  # ── Iceberg REST Catalog ──────────────────────────────
+  iceberg-rest:
+    image: tabulario/iceberg-rest:1.6.0
+    container_name: eam-iceberg-rest
+    ports:
+      - "8181:8181"
+    environment:
+      CATALOG_WAREHOUSE: s3://warehouse/
+      CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
+      CATALOG_S3_ENDPOINT: http://minio:9000
+      CATALOG_S3_PATH__STYLE__ACCESS: "true"
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_REGION: us-east-1
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+
+  # ── Airflow (standalone — webserver + scheduler) ──────
+  airflow:
+    image: apache/airflow:2.9.3-python3.11
+    container_name: eam-airflow
+    ports:
+      - "8080:8080"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "True"
+      # Pass through infra settings so DAGs can use them
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9094
+      MINIO_ENDPOINT: minio:9000
+      ICEBERG_CATALOG_URI: http://iceberg-rest:8181
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - airflow-data:/opt/airflow
+    command: >
+      bash -c "
+        airflow db migrate &&
+        airflow users create --username admin --password admin
+          --firstname Admin --lastname User --role Admin --email admin@example.com || true &&
+        airflow standalone
+      "
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+      iceberg-rest:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  kafka-data:
+  minio-data:
+  airflow-data:
