@@ -1,0 +1,61 @@
+title: "EAM Bronze Data Products"
+version: "4.1.0"
+description: "Open Data Product Standard definitions for raw CDC Bronze datasets stored in Iceberg. These products represent raw, append-only CDC payloads from the simulated EAM source system."
+owner: "eam-data-pipe-demo"
+layer: "bronze"
+products:
+  - name: "Raw Asset CDC Events"
+    dataset: "cdc.asset"
+    description: "Raw CDC events for Asset entities from the simulated EAM system."
+    value_proposition: "Provides raw, unprocessed change data for assets, enabling downstream processing and analytics."
+    owner: "eam-data-pipe-demo"
+    pricing_model: "Free for internal use"
+    slas:
+      availability: "99.9%"
+      freshness: "Near real-time"
+    terms_of_use: "Internal use only. Redistribution prohibited."
+    lineage:
+      upstream: "Kafka topic cdc.asset"
+      downstream: "Silver asset via CDC merge"
+
+  - name: "Raw WorkRequest CDC Events"
+    dataset: "cdc.work_request"
+    description: "Raw CDC events for WorkRequest entities."
+    value_proposition: "Provides raw, unprocessed change data for work requests, enabling downstream processing and analytics."
+    owner: "eam-data-pipe-demo"
+    pricing_model: "Free for internal use"
+    slas:
+      availability: "99.9%"
+      freshness: "Near real-time"
+    terms_of_use: "Internal use only. Redistribution prohibited."
+    lineage:
+      upstream: "Kafka topic cdc.work_request"
+      downstream: "Silver work_request via CDC merge"
+
+  - name: "Raw WorkOrder CDC Events"
+    dataset: "cdc.work_order"
+    description: "Raw CDC events for WorkOrder entities."
+    value_proposition: "Provides raw, unprocessed change data for work orders, enabling downstream processing and analytics."
+    owner: "eam-data-pipe-demo"
+    pricing_model: "Free for internal use"
+    slas:
+      availability: "99.9%"
+      freshness: "Near real-time"
+    terms_of_use: "Internal use only. Redistribution prohibited."
+    lineage:
+      upstream: "Kafka topic cdc.work_order"
+      downstream: "Silver work_order via CDC merge"
+
+  - name: "Raw MaintenanceAction CDC Events"
+    dataset: "cdc.maintenance_action"
+    description: "Raw CDC events for MaintenanceAction entities."
+    value_proposition: "Provides raw, unprocessed change data for maintenance actions, enabling downstream processing and analytics."
+    owner: "eam-data-pipe-demo"
+    pricing_model: "Free for internal use"
+    slas:
+      availability: "99.9%"
+      freshness: "Near real-time"
+    terms_of_use: "Internal use only. Redistribution prohibited."
+    lineage:
+      upstream: "Kafka topic cdc.maintenance_action"
+      downstream: "Silver maintenance_action via CDC merge"

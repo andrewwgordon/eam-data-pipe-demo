@@ -1,0 +1,61 @@
+title: "EAM Gold Data Products"
+version: "4.1.0"
+description: "Open Data Product Standard definitions for Gold datasets stored in Iceberg. These products represent analytics-ready outputs derived from Silver and Silver-S5000F layers."
+owner: "eam-data-pipe-demo"
+layer: "gold"
+products:
+  - name: "Asset Availability Metrics"
+    dataset: "gold.asset_availability"
+    description: "Point-in-time asset availability metrics derived from Silver asset state."
+    value_proposition: "Provides actionable insights into asset availability for operational decision-making."
+    owner: "eam-data-pipe-demo"
+    pricing_model: "Subscription-based for external consumers"
+    slas:
+      availability: "99.9%"
+      freshness: "Daily"
+    terms_of_use: "External use allowed under subscription. Redistribution prohibited."
+    lineage:
+      upstream: "silver.asset"
+      downstream: "None"
+
+  - name: "Maintenance History Aggregates"
+    dataset: "gold.maintenance_history"
+    description: "Aggregated maintenance event history per asset from Silver-S5000F maintenance events."
+    value_proposition: "Provides a comprehensive view of maintenance history for reliability analysis and reporting."
+    owner: "eam-data-pipe-demo"
+    pricing_model: "Subscription-based for external consumers"
+    slas:
+      availability: "99.9%"
+      freshness: "Daily"
+    terms_of_use: "External use allowed under subscription. Redistribution prohibited."
+    lineage:
+      upstream: "silver_s5000f.maintenance_event"
+      downstream: "None"
+
+  - name: "Work Order Backlog Metrics"
+    dataset: "gold.work_order_backlog"
+    description: "Aggregated metrics on work order backlog derived from Silver work orders."
+    value_proposition: "Provides insights into work order backlog for operational planning and resource allocation."
+    owner: "eam-data-pipe-demo"
+    pricing_model: "Subscription-based for external consumers"
+    slas:
+      availability: "99.9%"
+      freshness: "Daily"
+    terms_of_use: "External use allowed under subscription. Redistribution prohibited."
+    lineage:
+      upstream: "silver.work_order"
+      downstream: "None"
+
+  - name: "MTBF Metrics"
+    dataset: "gold.mtbf_metrics"
+    description: "Mean Time Between Failures (MTBF) metrics derived from Silver-S5000F maintenance events."
+    value_proposition: "Provides reliability metrics for assets to support maintenance planning and optimization."
+    owner: "eam-data-pipe-demo"
+    pricing_model: "Subscription-based for external consumers"
+    slas:
+      availability: "99.9%"
+      freshness: "Daily"
+    terms_of_use: "External use allowed under subscription. Redistribution prohibited."
+    lineage:
+      upstream: "silver_s5000f.maintenance_event"
+      downstream: "None"

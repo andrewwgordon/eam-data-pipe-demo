@@ -1,0 +1,61 @@
+title: "EAM Silver Data Products"
+version: "4.1.0"
+description: "Open Data Product Standard definitions for Silver datasets stored in Iceberg. These products represent current-state application data derived from CDC resolution."
+owner: "eam-data-pipe-demo"
+layer: "silver"
+products:
+  - name: "Current-State Asset Records"
+    dataset: "silver.asset"
+    description: "Current-state Asset records derived from Bronze CDC and CDC merge resolution."
+    value_proposition: "Provides a clean, stable view of asset data for operational reporting and analytics."
+    owner: "eam-data-pipe-demo"
+    pricing_model: "Free for internal use"
+    slas:
+      availability: "99.9%"
+      freshness: "Hourly"
+    terms_of_use: "Internal use only. Redistribution prohibited."
+    lineage:
+      upstream: "bronze.cdc.asset"
+      downstream: "Silver-S5000F product_instance"
+
+  - name: "Current-State WorkRequest Records"
+    dataset: "silver.work_request"
+    description: "Current-state WorkRequest records derived from Bronze CDC resolution."
+    value_proposition: "Provides a clean, stable view of work request data for operational reporting and analytics."
+    owner: "eam-data-pipe-demo"
+    pricing_model: "Free for internal use"
+    slas:
+      availability: "99.9%"
+      freshness: "Hourly"
+    terms_of_use: "Internal use only. Redistribution prohibited."
+    lineage:
+      upstream: "bronze.cdc.work_request"
+      downstream: "Silver-S5000F functional_failure"
+
+  - name: "Current-State WorkOrder Records"
+    dataset: "silver.work_order"
+    description: "Current-state WorkOrder records derived from CDC events and application state merge."
+    value_proposition: "Provides a clean, stable view of work order data for operational reporting and analytics."
+    owner: "eam-data-pipe-demo"
+    pricing_model: "Free for internal use"
+    slas:
+      availability: "99.9%"
+      freshness: "Hourly"
+    terms_of_use: "Internal use only. Redistribution prohibited."
+    lineage:
+      upstream: "bronze.cdc.work_order"
+      downstream: "Silver-S5000F maintenance_task"
+
+  - name: "Current-State MaintenanceAction Records"
+    dataset: "silver.maintenance_action"
+    description: "Current-state MaintenanceAction records representing executed or in-progress maintenance steps."
+    value_proposition: "Provides a clean, stable view of maintenance action data for operational reporting and analytics."
+    owner: "eam-data-pipe-demo"
+    pricing_model: "Free for internal use"
+    slas:
+      availability: "99.9%"
+      freshness: "Hourly"
+    terms_of_use: "Internal use only. Redistribution prohibited."
+    lineage:
+      upstream: "bronze.cdc.maintenance_action"
+      downstream: "Silver-S5000F maintenance_task_step"

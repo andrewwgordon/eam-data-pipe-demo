@@ -1,0 +1,75 @@
+title: "EAM Silver-S5000F Data Products"
+version: "4.1.0"
+description: "Open Data Product Standard definitions for Silver-S5000F datasets stored in Iceberg. These products represent standardized maintenance lifecycle data aligned with ASD S5000F concepts."
+owner: "eam-data-pipe-demo"
+layer: "silver_s5000f"
+products:
+  - name: "S5000F ProductInstance Records"
+    dataset: "silver_s5000f.product_instance"
+    description: "S5000F ProductInstance records representing maintainable physical items."
+    value_proposition: "Provides a standardized view of maintainable physical items for interoperability and analytics."
+    owner: "eam-data-pipe-demo"
+    pricing_model: "Free for internal use"
+    slas:
+      availability: "99.9%"
+      freshness: "Daily"
+    terms_of_use: "Internal use only. Redistribution prohibited."
+    lineage:
+      upstream: "silver.asset"
+      downstream: "Gold asset_availability"
+
+  - name: "S5000F FunctionalFailure Records"
+    dataset: "silver_s5000f.functional_failure"
+    description: "S5000F FunctionalFailure records representing reported failure modes."
+    value_proposition: "Provides a standardized view of reported failure modes for interoperability and analytics."
+    owner: "eam-data-pipe-demo"
+    pricing_model: "Free for internal use"
+    slas:
+      availability: "99.9%"
+      freshness: "Daily"
+    terms_of_use: "Internal use only. Redistribution prohibited."
+    lineage:
+      upstream: "silver.work_request"
+      downstream: "Gold maintenance_history"
+
+  - name: "S5000F MaintenanceTask Records"
+    dataset: "silver_s5000f.maintenance_task"
+    description: "S5000F MaintenanceTask records representing planned maintenance activities."
+    value_proposition: "Provides a standardized view of planned maintenance activities for interoperability and analytics."
+    owner: "eam-data-pipe-demo"
+    pricing_model: "Free for internal use"
+    slas:
+      availability: "99.9%"
+      freshness: "Daily"
+    terms_of_use: "Internal use only. Redistribution prohibited."
+    lineage:
+      upstream: "silver.work_order"
+      downstream: "Gold maintenance_history"
+
+  - name: "S5000F MaintenanceTaskStep Records"
+    dataset: "silver_s5000f.maintenance_task_step"
+    description: "S5000F MaintenanceTaskStep records representing atomic maintenance actions."
+    value_proposition: "Provides a standardized view of atomic maintenance actions for interoperability and analytics."
+    owner: "eam-data-pipe-demo"
+    pricing_model: "Free for internal use"
+    slas:
+      availability: "99.9%"
+      freshness: "Daily"
+    terms_of_use: "Internal use only. Redistribution prohibited."
+    lineage:
+      upstream: "silver.maintenance_action"
+      downstream: "Gold maintenance_history"
+
+  - name: "S5000F MaintenanceEvent Records"
+    dataset: "silver_s5000f.maintenance_event"
+    description: "S5000F MaintenanceEvent records representing executed maintenance activity."
+    value_proposition: "Provides a standardized view of executed maintenance activity for interoperability and analytics."
+    owner: "eam-data-pipe-demo"
+    pricing_model: "Free for internal use"
+    slas:
+      availability: "99.9%"
+      freshness: "Daily"
+    terms_of_use: "Internal use only. Redistribution prohibited."
+    lineage:
+      upstream: "silver.work_order + silver_s5000f.maintenance_task"
+      downstream: "Gold maintenance_history"

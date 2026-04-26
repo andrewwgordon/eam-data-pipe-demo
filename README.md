@@ -212,3 +212,22 @@ sleep 30                            # Wait for health checks
 ## License
 
 MIT
+
+## Open Data Product Standard (ODPS) Definitions
+
+The EAM Data Pipe Demo now includes Open Data Product Standard (ODPS) v4.1 definitions for all datasets across the Bronze, Silver, Silver-S5000F, and Gold layers. These definitions transform technical datasets into business-ready data products with clear value propositions, ownership, and consumption semantics.
+
+### Key Features of ODPS
+- **Product Metadata**: Name, description, owner, pricing model, SLAs, usage terms
+- **Product Variants**: Packaging for internal and external consumers
+- **Product Lineage**: Source-to-product traceability
+- **Realistic Pricing Models**: Free for internal use, subscription-based for external consumers
+- **Compliance**: Usage terms and restrictions documented
+
+### ODPS Layers
+- **Bronze**: Raw CDC events from the simulated EAM system
+- **Silver**: Current-state application data derived from CDC resolution
+- **Silver-S5000F**: Standardized maintenance lifecycle data aligned with ASD S5000F concepts
+- **Gold**: Analytics-ready outputs providing actionable insights
+
+See the [ODPS Data Products Documentation](docs/data_products/README.md) for detailed product definitions.

@@ -248,7 +248,18 @@ Airflow is strictly used for orchestration, not computation.
 │
 ├── docs/
 │   ├── architecture.md
-│   └── s5000f_mapping.md
+│   ├── s5000f_mapping.md
+│   ├── data_contracts/
+│   │   ├── bronze_odcs.yaml
+│   │   ├── silver_odcs.yaml
+│   │   ├── silver_s5000f_odcs.yaml
+│   │   └── gold_odcs.yaml
+│   └── data_products/
+│       ├── bronze_odps.yaml
+│       ├── silver_odps.yaml
+│       ├── silver_s5000f_odps.yaml
+│       ├── gold_odps.yaml
+│       └── README.md
 │
 └── README.md
 
@@ -302,25 +313,47 @@ Files to create:
   - s5000f_compliance_query.py
   - cross_layer_comparison.py
 
-Phase 7 — Data Contracts in ODCS YAML
-Purpose: Define explicit dataset contracts for all Bronze, Silver, Silver-S5000F, and Gold tables in Open Data Contract Standard YAML.
+Phase 7 — Open Data Product Standard (ODPS) v4.1 Implementation
+Purpose: Define realistic and representative data products for all Bronze, Silver, Silver-S5000F, and Gold layers using Open Data Product Standard v4.1. Transform technical datasets into marketable data products with business value, clear ownership, pricing, and consumption semantics.
+
 Implementation:
-- Create ODCS YAML contracts for each dataset layer
-- Document dataset name, description, field schema, types, partition keys, and lineage metadata
-- Cover Bronze CDC datasets: cdc.asset, cdc.work_request, cdc.work_order, cdc.maintenance_action
-- Cover Silver current-state tables: asset, work_request, work_order, maintenance_action
-- Cover Silver-S5000F tables: product_instance, maintenance_task, maintenance_task_step, maintenance_event
-- Cover Gold analytics outputs: asset_availability, maintenance_history, work_order_backlog, mtbf_metrics
+- Create ODPS v4.1 YAML product definitions for each data product layer
+- Define data products as marketable assets with business context, not just technical contracts
+- Include product metadata: name, description, owner, pricing model, SLAs, and usage terms
+- Map each Iceberg table to a data product with clear value proposition
+- Define product variants for different consumer segments (internal vs external)
+- Implement product versioning and lifecycle management
+- Cover Bronze data products: Raw CDC Streams (Asset, WorkRequest, WorkOrder, MaintenanceAction)
+- Cover Silver data products: Current-State Entity Views (Asset, WorkRequest, WorkOrder, MaintenanceAction)
+- Cover Silver-S5000F data products: Standardised Maintenance Products (ProductInstance, MaintenanceTask, MaintenanceEvent, MaintenanceTaskStep)
+- Cover Gold data products: Analytical Insights (AssetAvailability, MaintenanceHistory, WorkOrderBacklog, MTBFMetrics)
+
 Key Features:
-✅ ODCS YAML contract artifacts for all layers
- ✅ Explicit schema definitions and metadata
- ✅ Layer-aware contract boundaries and lineage links
- ✅ Consumer expectations and partition semantics documented
+✅ ODPS v4.1 compliant product definitions for all layers
+ ✅ Business-oriented product metadata (value proposition, pricing, SLAs)
+ ✅ Clear product ownership and stewardship
+ ✅ Product variants for different consumer segments
+ ✅ Integration with existing ODCS technical contracts
+ ✅ Product lifecycle and version management
+ ✅ Realistic pricing models (free for internal, subscription for external)
+ ✅ Usage terms and compliance requirements documented
+
+ODPS v4.1 Product Structure:
+- Product Identity: Unique identifier, name, version
+- Product Description: Business value, use cases, target audience
+- Product Composition: Technical components (Iceberg tables, schemas)
+- Product Variants: Different packaging for different consumers
+- Product Pricing: Pricing model, tiers, billing frequency
+- Product SLAs: Availability, freshness, support commitments
+- Product Terms: Usage rights, restrictions, compliance requirements
+- Product Lineage: Source-to-product traceability
+
 Files to create:
-- docs/data_contracts/bronze_odcs.yaml
-- docs/data_contracts/silver_odcs.yaml
-- docs/data_contracts/silver_s5000f_odcs.yaml
-- docs/data_contracts/gold_odcs.yaml
+- docs/data_products/bronze_odps.yaml
+- docs/data_products/silver_odps.yaml
+- docs/data_products/silver_s5000f_odps.yaml
+- docs/data_products/gold_odps.yaml
+- docs/data_products/README.md (ODPS implementation guide)
 
 11. Success Criteria
 The PoC is successful if:
@@ -330,6 +363,7 @@ The PoC is successful if:
  ✅ Source‑to‑standard traceability is demonstrable
  ✅ Gold analytics execute successfully
  ✅ Iceberg query function provides unified access to all data layers
+ ✅ ODPS v4.1 data products are defined for all layers with realistic business metadata
 
 12. Guiding Principle
 Demonstrate semantic interoperability with the smallest working system.
