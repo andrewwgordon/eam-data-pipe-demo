@@ -13,6 +13,7 @@ CDC → Kafka → Iceberg Bronze → Silver (App State) → Silver-S5000F → Go
 - **Polars** as the only batch transformation engine
 - **ASD S5000F** conceptual alignment (not formal compliance)
 - **Airflow** orchestration (no business logic in DAGs)
+- **Data Contracts** defined in ODCS YAML for Bronze, Silver, Silver-S5000F, and Gold datasets
 
 ## Quick Start
 
@@ -47,7 +48,7 @@ pytest
 
 ## Architecture
 
-See [docs/architecture.md](docs/architecture.md) for the full architecture overview.
+See [docs/architecture.md](docs/architecture.md) for the full architecture overview, including the new ODCS data contract layer.
 
 ### Pipeline Flow
 
@@ -86,7 +87,8 @@ See [docs/s5000f_mapping.md](docs/s5000f_mapping.md) for detailed field mappings
 │   └── query/              # Iceberg query module (Phase 6)
 ├── airflow/dags/           # Orchestration DAGs (no business logic)
 ├── config/                 # Centralised settings (env-var driven)
-├── docs/                   # Architecture & mapping documentation
+├── docs/                   # Architecture, mapping, and ODCS data contract documentation
+│   └── data_contracts/      # Open Data Contract Standard YAML dataset contracts
 ├── scripts/                # Infrastructure init + demo scripts
 └── tests/                  # Unit and integration tests
 ```

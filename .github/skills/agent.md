@@ -302,6 +302,26 @@ Files to create:
   - s5000f_compliance_query.py
   - cross_layer_comparison.py
 
+Phase 7 — Data Contracts in ODCS YAML
+Purpose: Define explicit dataset contracts for all Bronze, Silver, Silver-S5000F, and Gold tables in Open Data Contract Standard YAML.
+Implementation:
+- Create ODCS YAML contracts for each dataset layer
+- Document dataset name, description, field schema, types, partition keys, and lineage metadata
+- Cover Bronze CDC datasets: cdc.asset, cdc.work_request, cdc.work_order, cdc.maintenance_action
+- Cover Silver current-state tables: asset, work_request, work_order, maintenance_action
+- Cover Silver-S5000F tables: product_instance, maintenance_task, maintenance_task_step, maintenance_event
+- Cover Gold analytics outputs: asset_availability, maintenance_history, work_order_backlog, mtbf_metrics
+Key Features:
+✅ ODCS YAML contract artifacts for all layers
+ ✅ Explicit schema definitions and metadata
+ ✅ Layer-aware contract boundaries and lineage links
+ ✅ Consumer expectations and partition semantics documented
+Files to create:
+- docs/data_contracts/bronze_odcs.yaml
+- docs/data_contracts/silver_odcs.yaml
+- docs/data_contracts/silver_s5000f_odcs.yaml
+- docs/data_contracts/gold_odcs.yaml
+
 11. Success Criteria
 The PoC is successful if:
 ✅ CDC flows from simulator to Kafka

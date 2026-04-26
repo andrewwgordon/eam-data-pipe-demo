@@ -68,8 +68,7 @@ All topics are append-only, partitioned by primary key.
 ### Bronze — Raw CDC
 - Exact CDC payloads stored as JSON strings
 - Append-only, no deduplication
-- Partitioned by `event_date`
-
+- Partitioned by `event_date`- Contracted in ODCS YAML under `docs/data_contracts/bronze_odcs.yaml`
 ### Silver — Application State
 - CDC resolved into current-state tables (one row per entity)
 - Application semantics preserved
@@ -83,6 +82,16 @@ All topics are append-only, partitioned by primary key.
 ### Gold — Analytics
 - Derived metrics: availability, backlog, history, MTBF
 - Can use Silver or Silver-S5000F as inputs
+- Contracted in ODCS YAML under `docs/data_contracts/gold_odcs.yaml`
+
+## Data Contracts
+Data contracts are captured in Open Data Contract Standard (ODCS) YAML files for each layer:
+- `docs/data_contracts/bronze_odcs.yaml`
+- `docs/data_contracts/silver_odcs.yaml`
+- `docs/data_contracts/silver_s5000f_odcs.yaml`
+- `docs/data_contracts/gold_odcs.yaml`
+
+These contracts define dataset schemas, partition semantics, and lineage expectations for the PoC.
 
 ## Airflow DAG Pipeline
 
