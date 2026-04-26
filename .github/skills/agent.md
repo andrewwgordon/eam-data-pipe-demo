@@ -280,6 +280,28 @@ Gold metrics
 Comparison of application vs S5000F analytics
 End‑to‑end lineage demonstration
 
+Phase 6 — Iceberg Query Function with Polars SQL
+Purpose: Provide a unified query interface for analytical exploration across all data layers
+Implementation:
+- Create a reusable Polars SQL query function
+- Support querying Silver, Silver-S5000F, and Gold tables
+- Enable cross-layer joins and comparisons
+- Provide parameterized date partitioning
+- Include example queries for common analytical patterns
+Key Features:
+✅ Single function to query any Iceberg table
+ ✅ Support for Polars SQL syntax
+ ✅ Automatic partition filtering by date
+ ✅ Cross-layer join capabilities
+ ✅ Example queries for demonstration
+Files to create:
+- transforms/polars/query/iceberg_query.py
+- transforms/polars/query/examples/
+  - asset_availability_query.py
+  - maintenance_history_query.py
+  - s5000f_compliance_query.py
+  - cross_layer_comparison.py
+
 11. Success Criteria
 The PoC is successful if:
 ✅ CDC flows from simulator to Kafka
@@ -287,6 +309,7 @@ The PoC is successful if:
  ✅ S5000F‑aligned tables are generated
  ✅ Source‑to‑standard traceability is demonstrable
  ✅ Gold analytics execute successfully
+ ✅ Iceberg query function provides unified access to all data layers
 
 12. Guiding Principle
 Demonstrate semantic interoperability with the smallest working system.

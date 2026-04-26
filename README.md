@@ -82,7 +82,8 @@ See [docs/s5000f_mapping.md](docs/s5000f_mapping.md) for detailed field mappings
 ├── transforms/polars/
 │   ├── app/                # Bronze ingestion + CDC merge to Silver
 │   ├── s5000f/             # Semantic transformation to S5000F
-│   └── gold/               # Analytics rollups
+│   ├── gold/               # Analytics rollups
+│   └── query/              # Iceberg query module (Phase 6)
 ├── airflow/dags/           # Orchestration DAGs (no business logic)
 ├── config/                 # Centralised settings (env-var driven)
 ├── docs/                   # Architecture & mapping documentation
@@ -98,6 +99,44 @@ See [docs/s5000f_mapping.md](docs/s5000f_mapping.md) for detailed field mappings
 | MinIO | 9000 / 9001 | S3-compatible object storage |
 | Iceberg REST | 8181 | Table catalog |
 | Airflow | 8080 | Pipeline orchestration |
+
+## Iceberg Query Module (Phase 6)
+
+The query module provides a unified interface for analytical exploration across all data layers using Polars SQL.
+
+### Key Features
+- **Unified Query Interface**: Single function for all query types
+- **Cross-Layer Joins**: Join tables across Silver, Silver-S5000F, and Gold layers
+- **Automatic Partition Filtering**: Date-based partition pruning
+- **Example Queries**: Pre-built queries for common analytical patterns
+
+### Usage Examples
+```python
+from transforms.polars.query import query_iceberg
+
+# Query a single table
+df = query_iceberg("silver.asset", date_filter="2024-01-01", limit=10)
+
+# Custom SQL query with join
+sql = """
+SELECT a.id, a.name, wo.status
+FROM silver_asset a
+JOIN silver_work_order wo ON a.id = wo.asset_id
+WHERE wo.status = 'OPEN'
+"""
+df = query_iceberg(sql=sql, date_filter="2024-01-01")
+```
+
+### Running Examples
+```bash
+# Run example queries
+python -m transforms.polars.query.examples.asset_availability_query
+python -m transforms.polars.query.examples.maintenance_history_query
+python -m transforms.polars.query.examples.s5000f_compliance_query
+python -m transforms.polars.query.examples.cross_layer_comparison
+```
+
+See [docs/query_module.md](docs/query_module.md) for complete documentation.
 
 ## Technology Constraints
 
