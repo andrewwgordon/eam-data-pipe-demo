@@ -33,6 +33,7 @@ def get_catalog(settings: Settings | None = None):
             "s3.secret-access-key": settings.minio.secret_key,
             "s3.region": settings.minio.region,
             "s3.path-style-access": "true",
+            "s3.signature-version": "s3v4",
         },
     )
 

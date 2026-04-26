@@ -65,7 +65,7 @@ class IcebergSettings(BaseSettings):
     """Iceberg REST catalog configuration."""
 
     catalog_uri: str = "http://localhost:8181"
-    catalog_warehouse: str = "s3://warehouse"
+    catalog_warehouse: str = "s3://warehouse/"
 
     model_config = {"env_prefix": "ICEBERG_"}
 

@@ -135,6 +135,30 @@ def ingest_bronze(timeout_seconds: int = 10) -> int:
     logger.info("Bronze ingestion complete: %d total events", total)
     return total
 
+def read_bronze(table_name: str) -> pl.DataFrame:
+    """Read from a Bronze table (for testing/demo purposes)."""
+    settings = Settings()
+    catalog = get_catalog(settings)
+    table = catalog.load_table(table_name)
+    logger.debug("Reading Bronze table: %s", table_name)
+    logger.debug("Table schema: %s", table.schema())
+    return pl.from_arrow(table.scan().to_arrow())
+
+def read_all_bronze() -> dict[str, pl.DataFrame]:
+    """Read all Bronze tables into DataFrames (for testing/demo purposes)."""
+    return {
+        "asset": read_bronze("bronze.asset"),
+        "work_request": read_bronze("bronze.work_request"),
+        "work_order": read_bronze("bronze.work_order"),
+        "maintenance_action": read_bronze("bronze.maintenance_action"),
+    }
+
+def display_bronze_tables() -> None:
+    """Display contents of all Bronze tables (for testing/demo purposes)."""
+    tables = read_all_bronze()
+    for name, df in tables.items():
+        logger.debug("Bronze table: %s\n%s", name, df)
+
 
 def main() -> None:
     """CLI entry point."""
@@ -142,9 +166,17 @@ def main() -> None:
     parser.add_argument(
         "--timeout", type=int, default=10, help="Kafka poll timeout in seconds (default: 10)"
     )
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        default="INFO",
+        help="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
+    )
     args = parser.parse_args()
 
+    logging.getLogger().setLevel(getattr(logging, args.log_level))
     count = ingest_bronze(timeout_seconds=args.timeout)
+    display_bronze_tables()
     logger.info("Done. %d events ingested.", count)
     sys.exit(0)
 

@@ -48,6 +48,7 @@ def produce_events(n_events: int, seed: int | None = None) -> int:
     # Initialise simulator
     simulator = EAMSimulator(seed=effective_seed)
     events = simulator.generate_batch(n_events)
+    logger.debug("Generated events: %s", events)
     logger.info("Generated %d CDC events (seed=%d)", len(events), effective_seed)
 
     # Initialise Kafka producer
@@ -98,8 +99,16 @@ def main() -> None:
     parser.add_argument(
         "--seed", type=int, default=None, help="Random seed for reproducibility"
     )
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="Logging level (default: INFO)",
+    )
     args = parser.parse_args()
 
+    logging.getLogger().setLevel(getattr(logging, args.log_level))
     count = produce_events(n_events=args.events, seed=args.seed)
     logger.info("Done. %d events produced.", count)
     sys.exit(0)
