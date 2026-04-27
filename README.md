@@ -5,7 +5,7 @@ Minimal proof-of-concept demonstrating a modern data-engineering pipeline for En
 ## What This Demonstrates
 
 ```
-CDC → Kafka → Iceberg Bronze → Silver (App State) → Silver-S5000F → Gold Analytics
+CDC → Kafka → Iceberg Bronze → Silver (App State) → Silver-S5000F → Gold Analytics → Postgres (DBT)
 ```
 
 - **Change Data Capture** from a simulated EAM system
@@ -14,6 +14,7 @@ CDC → Kafka → Iceberg Bronze → Silver (App State) → Silver-S5000F → Go
 - **ASD S5000F** conceptual alignment (not formal compliance)
 - **Airflow** orchestration (no business logic in DAGs)
 - **Data Contracts** defined in ODCS YAML for Bronze, Silver, Silver-S5000F, and Gold datasets
+- **Hybrid Architecture**: Iceberg (source of truth) + Postgres (analytical replica via DBT)
 
 ## Quick Start
 
@@ -25,26 +26,32 @@ CDC → Kafka → Iceberg Bronze → Silver (App State) → Silver-S5000F → Go
 ### Setup & Run
 
 ```bash
-# 1. Start infrastructure
-docker compose up -d
+# 1. Install Python dependencies (includes PyArrow, PyIceberg, Polars, Kafka client, DBT)
+pip install -e '.[dev,dbt]'
 
-# 2. Install Python dependencies (includes PyArrow, PyIceberg, Polars, Kafka client)
-pip install -e '.[dev]'
+# 2. Run the full demo pipeline (starts infrastructure, runs pipeline, includes Phase 6 DBT Postgres transform)
+bash scripts/run_demo.sh [BATCH_SIZE]
 
-# 3. Run the full demo pipeline
-bash scripts/run_demo.sh
-
-# 4. Run tests
+# 3. Run tests
 pytest
 ```
 
 **Expected output from `bash scripts/run_demo.sh`:**
-- Step 1/6: Produces 100 CDC events to Kafka
-- Step 2/6: Ingests ~120 rows into Bronze tables (Bronze has all entity changes)
-- Step 3/6: Merges CDC into Silver (current state): ~20 assets, ~12 work requests, etc.
-- Step 4/6: Transforms to S5000F: ProductInstance, FunctionalFailure, MaintenanceTask, etc.
-- Step 5/6: Gold analytics: asset availability, work order backlog, maintenance history, MTBF
-- All 4 layers (Bronze, Silver, S5000F, Gold) populated in Iceberg
+- Step 1/11: Starts Docker infrastructure (Kafka, MinIO, Iceberg, Postgres, Airflow)
+- Step 2/11: Waits for services to be ready with health checks
+- Step 3/11: Initializes infrastructure (Kafka topics, MinIO buckets, Postgres schemas)
+- Step 4/11: Initializes Postgres schemas for Phase 6 DBT transform
+- Step 5/11: Produces CDC events to Kafka (default: 100 events)
+- Step 6/11: Ingests Bronze layer (Kafka → Iceberg)
+- Step 7/11: CDC Merge → Silver (application state)
+- Step 8/11: S5000F Semantic Transformation
+- Step 9/11: Gold Analytics Rollups
+- Step 10/11: Phase 6 - DBT Postgres Transform (Iceberg → Postgres replication)
+- Step 11/11: Runs example queries demonstrating hybrid architecture
+
+**Data now available in:**
+- **Iceberg** (source of truth): Bronze, Silver, Silver-S5000F, Gold layers
+- **Postgres** (analytical replica): Bronze, Silver, Silver-S5000F, Gold schemas (via DBT)
 
 ## Architecture
 
@@ -52,14 +59,16 @@ See [docs/architecture.md](docs/architecture.md) for the full architecture overv
 
 ### Pipeline Flow
 
-| Layer | Purpose | Technology |
-|-------|---------|------------|
-| **Simulator** | Generate CDC events | Python + Faker |
-| **Kafka** | Event transport | Bitnami Kafka (KRaft) |
-| **Bronze** | Raw CDC storage | Iceberg (append-only) |
-| **Silver** | Application current state | Polars CDC merge → Iceberg |
-| **Silver-S5000F** | Standardised model | Polars semantic mapping → Iceberg |
-| **Gold** | Analytics & reporting | Polars aggregation → Iceberg |
+| Layer | Purpose | Technology | Phase 6 (Postgres) |
+|-------|---------|------------|-------------------|
+| **Simulator** | Generate CDC events | Python + Faker | - |
+| **Kafka** | Event transport | Apache Kafka (KRaft) | - |
+| **Bronze** | Raw CDC storage | Iceberg (append-only) | Postgres via DBT |
+| **Silver** | Application current state | Polars CDC merge → Iceberg | Postgres via DBT |
+| **Silver-S5000F** | Standardised model | Polars semantic mapping → Iceberg | Postgres via DBT |
+| **Gold** | Analytics & reporting | Polars aggregation → Iceberg | Postgres via DBT |
+
+**Phase 6 Architecture**: Hybrid design with Iceberg as source of truth and Postgres as analytical replica for BI tools.
 
 ### S5000F Mapping
 
@@ -80,15 +89,23 @@ See [docs/s5000f_mapping.md](docs/s5000f_mapping.md) for detailed field mappings
 │   ├── entities/           # Entity dataclasses (Asset, WorkOrder, etc.)
 │   ├── event_generator.py  # Lifecycle simulation engine
 │   └── produce_cdc.py      # Kafka CDC producer
-├── transforms/polars/
-│   ├── app/                # Bronze ingestion + CDC merge to Silver
-│   ├── s5000f/             # Semantic transformation to S5000F
-│   ├── gold/               # Analytics rollups
-│   └── query/              # Iceberg query module (Phase 6)
+├── transforms/
+│   ├── polars/             # Primary transformation engine (Polars)
+│   │   ├── app/            # Bronze ingestion + CDC merge to Silver
+│   │   ├── s5000f/         # Semantic transformation to S5000F
+│   │   ├── gold/           # Analytics rollups
+│   │   └── query/          # Iceberg query module
+│   └── dbt/                # Phase 6: DBT Postgres transform layer
+│       ├── models/         # 16 DBT models across 4 layers
+│       ├── macros/         # DBT macros for lineage preservation
+│       ├── dbt_project.yml # DBT configuration
+│       └── profiles.yml    # Postgres connection profiles
 ├── airflow/dags/           # Orchestration DAGs (no business logic)
 ├── config/                 # Centralised settings (env-var driven)
-├── docs/                   # Architecture, mapping, and ODCS data contract documentation
-│   └── data_contracts/      # Open Data Contract Standard YAML dataset contracts
+├── docs/                   # Architecture, mapping, and documentation
+│   ├── data_contracts/     # Open Data Contract Standard YAML dataset contracts
+│   ├── data_products/      # Open Data Product Standard definitions
+│   └── PHASE_6_*          # Phase 6 implementation documentation
 ├── scripts/                # Infrastructure init + demo scripts
 └── tests/                  # Unit and integration tests
 ```
@@ -100,6 +117,7 @@ See [docs/s5000f_mapping.md](docs/s5000f_mapping.md) for detailed field mappings
 | Kafka | 9092 | CDC event transport |
 | MinIO | 9000 / 9001 | S3-compatible object storage |
 | Iceberg REST | 8181 | Table catalog |
+| Postgres | 5432 | Phase 6: Analytical database for DBT transforms |
 | Airflow | 8080 | Pipeline orchestration |
 
 ## Iceberg Query Module (Phase 6)
@@ -140,13 +158,73 @@ python -m transforms.polars.query.examples.cross_layer_comparison
 
 See [docs/query_module.md](docs/query_module.md) for complete documentation.
 
+## Phase 6: DBT Postgres Transform Layer
+
+Phase 6 adds a DBT-based Postgres analytical replica to complement the existing Polars-based Iceberg pipeline. This creates a hybrid architecture where Iceberg remains the source of truth, while Postgres serves as a high-performance analytical replica for BI tools and ad-hoc queries.
+
+### Architecture Overview
+- **Iceberg**: Source of truth, immutable snapshots, partition-aware storage
+- **Postgres**: Analytical replica, high-performance queries, BI tool compatibility  
+- **Polars**: Primary transformation engine (batch processing)
+- **DBT**: Secondary transformation for Postgres modeling and lineage
+
+### DBT Project Structure
+```
+transforms/dbt/
+├── dbt_project.yml          # DBT configuration
+├── profiles.yml             # Postgres connection profiles
+├── models/
+│   ├── staging/             # Iceberg source extraction models
+│   ├── bronze/              # 4 models: Raw CDC replicas
+│   ├── silver/              # 4 models: Application state replicas
+│   ├── silver_s5000f/       # 4 models: Standardized maintenance models
+│   └── gold/                # 4 models: Analytics and reporting
+├── macros/
+│   └── get_iceberg_snapshot_id.sql  # Lineage preservation macro
+└── README.md                # Comprehensive documentation
+```
+
+### Key Features
+1. **Hybrid Architecture**: Iceberg (source of truth) + Postgres (analytical replica)
+2. **Complete Data Replication**: All 4 data layers replicated to Postgres
+3. **Lineage Preservation**: `source_system`, `source_id`, `dbt_created_at`, `dbt_updated_at` columns
+4. **Schema Validation**: DBT tests for data quality and schema consistency
+5. **BI Tool Ready**: Postgres enables direct connection from Tableau, Power BI, Metabase, etc.
+
+### Airflow Orchestration
+- **DAG**: `dbt_postgres_transform_dag.py`
+- **Tasks**: 16 extract tasks + 4 DBT transform tasks + validation
+- **Execution**: Runs after `gold_rollups_dag.py` in pipeline sequence
+- **Error Handling**: Graceful degradation if DBT setup fails
+
+### Usage
+```bash
+# Manual DBT execution
+cd transforms/dbt
+export DBT_PROFILES_DIR=$(pwd)
+dbt debug                    # Test connection
+dbt run --selector tag:bronze
+dbt run --selector tag:silver
+dbt run --selector tag:silver_s5000f
+dbt run --selector tag:gold
+dbt test                     # Run schema validation
+
+# Check Postgres tables
+docker exec eam-postgres psql -U postgres -d eam_analytics -c "\dt bronze.*"
+docker exec eam-postgres psql -U postgres -d eam_analytics -c "\dt silver.*"
+```
+
+See [docs/PHASE_6_IMPLEMENTATION.md](docs/PHASE_6_IMPLEMENTATION.md) and [docs/PHASE_6_SUMMARY.md](docs/PHASE_6_SUMMARY.md) for complete implementation details.
+
 ## Technology Constraints
 
-- ✅ **Polars only** — no Spark, DuckDB, or Pandas
+- ✅ **Polars primary** — main batch transformation engine (no Spark, DuckDB, or Pandas)
+- ✅ **DBT secondary** — complementary transformation for Postgres analytical replica
 - ✅ **Kafka is transport** — append-only, no replay logic
 - ✅ **Airflow orchestrates** — no business logic in DAGs
 - ✅ **Bounded computation** — no unbounded table scans
 - ✅ **Explicit mappings** — no hidden abstractions
+- ✅ **Hybrid architecture** — Iceberg source of truth + Postgres analytical replica
 
 ## Troubleshooting
 
@@ -207,6 +285,91 @@ for table_id in ['bronze.asset', 'silver.asset', 'silver_s5000f.product_instance
 docker compose down -v              # Remove all volumes
 docker compose up -d                # Start fresh
 sleep 30                            # Wait for health checks
+```
+
+### Issue: Phase 6 DBT connection fails
+
+**Cause:** DBT not installed or Postgres not accessible.
+
+**Fix:** 
+```bash
+# Install DBT dependencies
+pip install -e ".[dbt]"
+
+# Check Postgres is running
+docker ps --filter "name=eam-postgres"
+
+# Test DBT connection
+cd transforms/dbt
+export DBT_PROFILES_DIR=$(pwd)
+dbt debug
+```
+
+### Issue: DBT project validation errors
+
+**Cause:** Configuration issues in `dbt_project.yml` or `profiles.yml`.
+
+**Fix:**
+```bash
+# Check DBT configuration
+cd transforms/dbt
+dbt debug --config-dir
+
+# Common fixes:
+# 1. Ensure project name has no hyphens (use underscores)
+# 2. Remove deprecated `data-paths` configuration
+# 3. Verify Postgres connection details in profiles.yml
+```
+
+### Issue: Kafka waiting logic fails in demo script
+
+**Cause:** Kafka container not ready or command path incorrect.
+
+**Fix:** The script has been updated with robust health checks:
+- Checks container status before executing commands
+- Uses full path `/opt/kafka/bin/kafka-topics.sh` (not relying on PATH)
+- Uses `kafka:9094` for internal container communication
+- Includes descriptive error messages
+
+If issues persist, manually test:
+```bash
+# Check container status
+docker ps --filter "name=eam-kafka" --format "{{.Status}}"
+
+# Test Kafka connection
+docker exec eam-kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9094 --list
+```
+
+## Updated Demo Script (`scripts/run_demo.sh`)
+
+The demo script has been significantly enhanced to provide robust end-to-end execution:
+
+### Key Improvements
+1. **Service Health Checks**: Waits for all services (Postgres, Kafka, MinIO) with container status verification
+2. **Infrastructure Initialization**: Creates Kafka topics, MinIO buckets, and Postgres schemas
+3. **Phase 6 Integration**: Includes DBT Postgres transform execution with error handling
+4. **Robust Error Handling**: Graceful degradation if DBT setup fails
+5. **Comprehensive Logging**: Clear step-by-step progress reporting
+
+### Service Waiting Logic
+The script now includes intelligent waiting for services:
+- **Container status verification**: Checks if containers are running before executing commands
+- **Service readiness checks**: Tests actual service responsiveness (not just container status)
+- **Timeout handling**: 60-second timeout with descriptive error messages
+- **Consistent connection strings**: Uses `kafka:9094` for internal container communication
+
+### Execution Flow
+```bash
+# Run with default batch size (100 events)
+bash scripts/run_demo.sh
+
+# Run with custom batch size
+bash scripts/run_demo.sh 500
+
+# Run with environment variables
+export BATCH_SIZE=200
+export SEED=123
+bash scripts/run_demo.sh
 ```
 
 ## License
