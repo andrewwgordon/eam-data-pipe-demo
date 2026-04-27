@@ -1,0 +1,243 @@
+# models/staging/sources.yml
+# Source definitions for Iceberg-originated data
+# These define the structure of data loaded into Postgres staging schemas
+
+version: 2
+
+sources:
+  - name: iceberg_bronze
+    description: "Raw CDC events replicated from Iceberg Bronze layer"
+    schema: staging_bronze
+    tables:
+      - name: asset
+        description: "Asset CDC events"
+        columns:
+          - name: entity
+            description: "Entity type: 'asset'"
+          - name: op
+            description: "CDC operation: create (c), update (u), delete (d)"
+          - name: event_ts
+            description: "Event timestamp in ISO-8601 format"
+          - name: pk_id
+            description: "Primary key ID from source system"
+          - name: payload_json
+            description: "Full event payload as JSON string"
+          - name: event_date
+            description: "Partition column: YYYY-MM-DD"
+          - name: source_system
+            description: "Source system identifier"
+
+      - name: work_request
+        description: "WorkRequest CDC events"
+        columns:
+          - name: pk_id
+          - name: op
+          - name: event_ts
+          - name: payload_json
+          - name: event_date
+          - name: source_system
+
+      - name: work_order
+        description: "WorkOrder CDC events"
+        columns:
+          - name: pk_id
+          - name: op
+          - name: event_ts
+          - name: payload_json
+          - name: event_date
+          - name: source_system
+
+      - name: maintenance_action
+        description: "MaintenanceAction CDC events"
+        columns:
+          - name: pk_id
+          - name: op
+          - name: event_ts
+          - name: payload_json
+          - name: event_date
+          - name: source_system
+
+  - name: iceberg_silver
+    description: "Application state data replicated from Iceberg Silver layer"
+    schema: staging_silver
+    tables:
+      - name: asset
+        description: "Current state of assets"
+        columns:
+          - name: id
+            description: "Asset ID"
+            tests:
+              - unique
+              - not_null
+          - name: name
+            description: "Asset name"
+          - name: asset_type
+            description: "Type of asset"
+          - name: location
+            description: "Physical location"
+          - name: status
+            description: "Current operational status"
+          - name: install_date
+            description: "Installation date ISO-8601"
+          - name: updated_at
+            description: "Last update timestamp"
+          - name: source_system
+            description: "Source system"
+          - name: source_id
+            description: "ID from source system"
+
+      - name: work_request
+        description: "Current state of work requests"
+        columns:
+          - name: id
+            tests:
+              - unique
+              - not_null
+          - name: asset_id
+          - name: description
+          - name: priority
+          - name: status
+          - name: reported_at
+          - name: updated_at
+          - name: source_system
+          - name: source_id
+
+      - name: work_order
+        description: "Current state of work orders"
+        columns:
+          - name: id
+            tests:
+              - unique
+              - not_null
+          - name: work_request_id
+          - name: asset_id
+          - name: status
+          - name: planned_start
+          - name: planned_end
+          - name: actual_start
+          - name: actual_end
+          - name: updated_at
+          - name: source_system
+          - name: source_id
+
+      - name: maintenance_action
+        description: "Current state of maintenance actions"
+        columns:
+          - name: id
+            tests:
+              - unique
+              - not_null
+          - name: work_order_id
+          - name: step_number
+          - name: description
+          - name: status
+          - name: started_at
+          - name: completed_at
+          - name: source_system
+          - name: source_id
+
+  - name: iceberg_silver_s5000f
+    description: "Standards-aligned data replicated from Iceberg Silver-S5000F layer"
+    schema: staging_silver_s5000f
+    tables:
+      - name: product_instance
+        description: "S5000F ProductInstance (physical assets)"
+        columns:
+          - name: product_instance_id
+            tests:
+              - unique
+              - not_null
+          - name: name
+          - name: type
+          - name: location
+          - name: operational_status
+          - name: installation_date
+          - name: source_system
+          - name: source_id
+          - name: mapped_at
+
+      - name: maintenance_task
+        description: "S5000F MaintenanceTask (planned work)"
+        columns:
+          - name: maintenance_task_id
+            tests:
+              - unique
+              - not_null
+          - name: product_instance_id
+          - name: task_type
+          - name: status
+          - name: planned_start_date
+          - name: planned_end_date
+          - name: source_system
+          - name: source_id
+
+      - name: maintenance_event
+        description: "S5000F MaintenanceEvent (executed work)"
+        columns:
+          - name: maintenance_event_id
+            tests:
+              - unique
+              - not_null
+          - name: product_instance_id
+          - name: maintenance_task_id
+          - name: event_type
+          - name: actual_start_date
+          - name: actual_end_date
+          - name: source_system
+          - name: source_id
+
+      - name: maintenance_task_step
+        description: "S5000F MaintenanceTaskStep (activity within task)"
+        columns:
+          - name: maintenance_task_step_id
+            tests:
+              - unique
+              - not_null
+          - name: maintenance_task_id
+          - name: step_sequence
+          - name: description
+          - name: status
+          - name: source_system
+          - name: source_id
+
+  - name: iceberg_gold
+    description: "Analytics tables replicated from Iceberg Gold layer"
+    schema: staging_gold
+    tables:
+      - name: asset_availability
+        description: "Point-in-time asset operational availability"
+        columns:
+          - name: asset_id
+          - name: name
+          - name: is_available
+          - name: availability_pct
+          - name: computed_at
+
+      - name: maintenance_history
+        description: "Historical maintenance activity by asset"
+        columns:
+          - name: asset_id
+          - name: work_order_count
+          - name: completed_actions_count
+          - name: last_maintenance_date
+          - name: computed_at
+
+      - name: work_order_backlog
+        description: "Current open work orders and queue depth"
+        columns:
+          - name: asset_id
+          - name: work_order_id
+          - name: priority
+          - name: status
+          - name: days_open
+          - name: computed_at
+
+      - name: mtbf_metrics
+        description: "Mean time between failures calculations"
+        columns:
+          - name: asset_id
+          - name: asset_name
+          - name: total_failures
+          - name: observation_days
+          - name: mtbf_days
+          - name: computed_at

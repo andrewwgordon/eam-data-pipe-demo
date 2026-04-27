@@ -1,0 +1,76 @@
+# dbt_project.yml
+# DBT configuration for EAM data lake Postgres analytical replica
+
+name: "eam_data_pipe_dbt"
+version: "1.0.0"
+profile: "eam_dbt"
+
+# Directories
+model-paths: ["models"]
+macro-paths: ["macros"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+analysis-paths: ["analyses"]
+
+# Artifact handling
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Project settings
+require-dbt-version: [">=1.8.0"]
+
+# Common configurations
+vars:
+  iceberg_catalog_uri: "{{ env_var('ICEBERG_CATALOG_URI', 'http://localhost:8181') }}"
+  minio_endpoint: "{{ env_var('MINIO_ENDPOINT', 'http://localhost:9000') }}"
+  minio_access_key: "{{ env_var('MINIO_ACCESS_KEY', 'minioadmin') }}"
+  minio_secret_key: "{{ env_var('MINIO_SECRET_KEY', 'minioadmin') }}"
+
+# Models configuration
+models:
+  eam_data_pipe_dbt:
+    # Staging layer: intermediate models for Iceberg source extraction
+    staging:
+      materialized: view
+      tags: ["staging"]
+      schema: staging
+    
+    # Bronze layer: Raw CDC replicas
+    bronze:
+      materialized: table
+      tags: ["bronze", "analytics"]
+      schema: bronze
+      indexes:
+        - columns: ["pk_id"]
+        - columns: ["event_date"]
+    
+    # Silver layer: Application state replicas
+    silver:
+      materialized: table
+      tags: ["silver", "analytics"]
+      schema: silver
+      indexes:
+        - columns: ["id"]
+        - columns: ["source_id"]
+    
+    # Silver-S5000F layer: Standards-aligned replicas
+    silver_s5000f:
+      materialized: table
+      tags: ["silver_s5000f", "standards"]
+      schema: silver_s5000f
+      indexes:
+        - columns: ["source_id"]
+    
+    # Gold layer: Analytics-ready tables
+    gold:
+      materialized: table
+      tags: ["gold", "analytics"]
+      schema: gold
+
+# Seeds configuration
+seeds:
+  eam-data-pipe-dbt:
+    +schema: reference
+    +quote_columns: false

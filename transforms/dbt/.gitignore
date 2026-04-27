@@ -1,0 +1,25 @@
+# DBT artifacts and generated files
+target/
+dbt_packages/
+.dbt/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+venv/
+
+# DBT-specific
+logs/
+*.log
+profiles.yml

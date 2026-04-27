@@ -1,5 +1,5 @@
 # EAM Data Pipe PoC — Local Infrastructure
-# Services: Kafka (KRaft), MinIO, Iceberg REST Catalog, Airflow
+# Services: Kafka (KRaft), MinIO, Iceberg REST Catalog, Postgres, Airflow
 #
 # Usage:
 #   docker compose up -d
@@ -100,6 +100,24 @@ services:
       minio-init:
         condition: service_completed_successfully
 
+  # ── Postgres (Analytical replica database) ───────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: eam-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: eam_analytics
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # ── Airflow (standalone — webserver + scheduler) ──────
   airflow:
     image: apache/airflow:2.9.3-python3.11
@@ -115,6 +133,12 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9094
       MINIO_ENDPOINT: minio:9000
       ICEBERG_CATALOG_URI: http://iceberg-rest:8181
+      # Postgres connection for Phase 6 DBT transforms
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: eam_analytics
     volumes:
       - ./airflow/dags:/opt/airflow/dags:ro
       - airflow-data:/opt/airflow
@@ -128,6 +152,8 @@ services:
     depends_on:
       kafka-init:
         condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
       iceberg-rest:
         condition: service_started
     healthcheck:
@@ -139,4 +165,5 @@ services:
 volumes:
   kafka-data:
   minio-data:
+  postgres-data:
   airflow-data:

@@ -1,0 +1,14 @@
+# models/schema.yml
+# Shared schema definitions and generic tests for all models
+
+version: 2
+
+generic_tests:
+  - name: not_null
+    description: Asserts that a column does not have any null values
+  - name: unique
+    description: Asserts that all values in a column are unique
+  - name: accepted_values
+    description: Asserts that all values in a column are within a specified set
+  - name: relationships
+    description: Asserts referential integrity between tables
